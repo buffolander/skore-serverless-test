@@ -1,0 +1,38 @@
+{
+    "Records": [
+        {
+            "eventVersion": "2.1",
+            "eventSource": "aws:s3",
+            "awsRegion": "sa-east-1",
+            "eventTime": "2019-02-10T12:16:45.565Z",
+            "eventName": "ObjectCreated:Put",
+            "userIdentity": {
+                "principalId": "A2LPLQ586E3G2D"
+            },
+            "requestParameters": {
+                "sourceIPAddress": "177.95.117.179"
+            },
+            "responseElements": {
+                "x-amz-request-id": "3F79C9B82E7B2913",
+                "x-amz-id-2": "17AW7RSKixGYbFrTh3JMfclTZFQ6nTp8wLGsWMw9KY0UuSQq7aMvNKMMU6ca+369J8SjET8tf0Y="
+            },
+            "s3": {
+                "s3SchemaVersion": "1.0",
+                "configurationId": "908d9390-83f5-4a8a-871d-aad2c587897f",
+                "bucket": {
+                    "name": "skore-serverless-test",
+                    "ownerIdentity": {
+                        "principalId": "A2LPLQ586E3G2D"
+                    },
+                    "arn": "arn:aws:s3:::skore-serverless-test"
+                },
+                "object": {
+                    "key": "content-consumption-files/patients-upload-190205.csv",
+                    "size": 2797,
+                    "eTag": "7703c8dd3a297da9f2731a1fd9bba8f1",
+                    "sequencer": "005C60162D7A3C56E5"
+                }
+            }
+        }
+    ]
+}

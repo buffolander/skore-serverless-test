@@ -1,0 +1,119 @@
+service: skore-serverless-test
+
+frameworkVersion: ">=1.1.0 <2.0.0"
+
+custom:
+  bucket: ${self:service}
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  region: sa-east-1
+  environment:
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    DYNAMODB_SYNC_OPS: ${self:service}-sync-ops
+    DYNAMODB_CONTENT_CONSUMPTION: ${self:service}-content-consumption
+    UPLOAD_MAX_BATCH_SIZE: 1000
+  role: arn:aws:iam::537860298710:role/skore-serverless-test-dev-sa-east-1-lambdaRole
+
+resources:
+  Resources:
+
+    SyncOpsDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_SYNC_OPS}
+        AttributeDefinitions:
+          - AttributeName: customer_id
+            AttributeType: S
+          - AttributeName: file_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: customer_id
+            KeyType: HASH
+          - AttributeName: file_id
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+
+    ContentConsumptionDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_CONTENT_CONSUMPTION}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: customer_id
+            AttributeType: S
+          - AttributeName: user_id
+            AttributeType: S
+          - AttributeName: count_
+            AttributeType: N
+        KeySchema:
+          - AttributeName: customer_id
+            KeyType: HASH
+          - AttributeName: user_id
+            KeyType: RANGE
+        LocalSecondaryIndexes:
+        - IndexName: count-index
+          KeySchema:
+          - AttributeName: customer_id
+            KeyType: HASH
+          - AttributeName: count_
+            KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+functions:
+
+  authorizer:
+    handler: authorizer/index.handler
+
+  trigger-upload-s3:
+    timeout: 30
+    memorySize: 1024
+    handler: triggers/upload-s3/index.handler
+    events:
+      - s3:
+        bucket: ${self:custom.bucket}
+        event: s3:ObjectCreated:*
+        rules:
+          - prefix: content-consumption-files/
+          - suffix: .csv
+  
+  trigger-upload-from-dynamodb:
+    timeout: 30
+    memorySize: 512
+    handler: triggers/upload-dynamodb/index.handler
+    exclude: 
+      - .test.js
+    events:
+      - stream:
+        arn: arn:aws:dynamodb:sa-east-1:537860298710:table/skore-serverless-test-sync-ops/stream/2019-02-12T02:57:46.741
+        batchSize: 1
+        startingPosition: LATEST
+        enabled: true
+
+  resource-upload-status-list:
+    timeout: 6
+    memorySize: 1024
+    handler: api-resources/upload-status/list.handler
+    events:
+      - http:
+          path: upload-status
+          method: get
+          cors: true
+
+  resource-user-consumption-list:
+    timeout: 6
+    memorySize: 1024
+    handler: api-resources/user-consumption/list.handler
+    events:
+      - http:
+          path: user-consumption
+          method: get
+          cors: true
